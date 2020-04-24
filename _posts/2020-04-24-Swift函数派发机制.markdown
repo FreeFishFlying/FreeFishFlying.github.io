@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Swift的函数派发"
+title: "Swift的方法派发"
 subtitle: ""
 author: "Scp"
 header-style: text
@@ -65,7 +65,7 @@ Swift有一些修饰符可以指定派发方式：
 
 **修饰符总结**
 
-| |
+|keyword | value |
 | -- | :--: |
 |final| Static|
 |dynamic| Message
