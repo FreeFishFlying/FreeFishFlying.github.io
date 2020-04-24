@@ -1,0 +1,75 @@
+---
+layout: post
+title: "Swift的方法派发"
+subtitle: ""
+author: "Scp"
+header-style: text
+tags:
+- Swift
+---
+#### 派发方式
+  编译型编程语言主要有三种派发方式：**直接派发/静态派发（Direct Dispatch/Dynamically Dispatch）**，**函数表派发（Table Dispatch）**和**消息机制派发**
+  Objective-C总是使用消息机制派发，但允许开发者使用C进行直接派发来提高性能。Swift已经实现了三种派发机制的全部支持。
+  派发机制的目的是为了让程序告诉CPU，当调用一个具体方法的时候要去内存的哪个地方找到可执行代码。
+#### 它们的区别
+  **直接派发**是速度最快的派发机制，它生成的汇编指令最少，例如自由函数和那些在结构体上调用的函数
+ **函数表派发**
+   这是编译型编程语言动态性的最常见的实现，函数表维护了一个指针数组，每个指针都指向类中申明的函数，每个申明也确保有指针指向它，我们称之为[`vtable`](https://en.wikipedia.org/wiki/Virtual_method_table)。
+   每个类都维护一张属于自己的函数表，里面记录着所有函数，子类会复制一张父类的表，以便完成继承操作，在子类重写方法时修改指针，指向覆盖的新函数，子类添加的新函数会被插入表的最后。
+ **消息机制派发**
+   消息机制派发是动态性最高的调用方式，开发者可以在运行时修改函数的调用，例如`Method Swizzling`可以在运行时修改函数的实现和调用，甚至可以通过`ISA Swizzling`在运行时修改对象的继承关系，由此可以在面向对象的基础上实现自定义分发。
+   当一个消息被派发，`runtime`会顺着继承关系查找应该被调用的函数，这样做的效率很低。但是，这个查找关系会建立一个散列表用于缓存，一旦缓存被建立起来，消息机制派发就会像函数表派发一样快。
+   
+#### Swift的派发机制
+  Swift的派发机制没有一个固定答案，但是影响派发方式的因素有四个：
+  - 申明的位置
+  - 引用类型
+  - 指定派发方式
+  - 显示优化
+  
+  唯一不同的是：使用`dynamic`修饰的函数，会用 `runtime`进行消息机制派发。
+  
+##### 申明的位置
+
+ Type|Initial Declaration | Extension
+ --|:--:|--:
+ Value Type| Static| Static
+ Protocol |Table|Static
+ Class|Table|Static|
+ NSObjectSubclass|Table|Message
+ 
+ 总结一下：
+ - 值类型总是直接派发
+ - 协议和类的申明作用域中的函数，除值类型外，都使用函数表派发
+ - 协议和类的extension中的函数，使用直接派发
+ - NSobject的extension的函数使用消息机制派发
+ 
+#### 指定派发方式
+Swift有一些修饰符可以指定派发方式：
+
+**final**
+`final`允许类里面的函数使用直接派发，这个修饰符会让函数失去动态性。任何函数都可以使用这个修饰符，就算是`extension`里本来就是直接派发的函数，这也会让`objective-C Runtime`获取不到这个函数，不会生成相应的`selector`。
+
+**dynamic**
+`dynamic`可以让类里面所有的函数使用消息机制派发，使用时必须导入`Foundation`包，里面包括了`NSObject`的`Runtime`。`dynamic`可以用在所有`NSObject`的子类和所有的Swift原生类，也可以让`extension`中的函数能够被继承。
+
+**@objc & @nonobj**
+`@objc`和`@nonobj`显示地申明了一个函数能否被`Objective-C Runtime`捕捉到。使用`@obj`的典型例子就是给`selector`一个命名空间， 让这个函数可以在运行时被调用。@nonobj表示不让这个函数注册到`Runtime`中，由此禁止消息机制来派发这个函数，和`final`非常相似。
+
+**final @objc**
+可以同时使用`final`和`@objc`来修饰函数
+，这样做的结果就是，调用函数时会直接派发，但可以将函数注册到`Objective-C Runtime`中，来让函数可以响应perform(selector:)或者其他特性。
+
+**@inline**
+可以通过`@inline`来使用直接派发，但是同时使用`dynamic @inline`修饰时，会使用消息机制派发。
+
+**修饰符总结**
+| |
+--|:--:
+final| Static
+dynamic| Message
+@objc | Modify Objective-C Visiblity
+@online | Code generation hint for direct dispatch
+
+#### 显示优化
+Swift会尽可能优化函数派发方式，例如，一个函数从来没有继承或被继承过，Swift就会检测到并且在可能的情况下使用直接派发，在大多数情况下这样的优化效果非常好，但是对于CoCoa开发者就不太友好了。
