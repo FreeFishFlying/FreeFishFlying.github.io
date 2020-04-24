@@ -64,12 +64,14 @@ Swift有一些修饰符可以指定派发方式：
 可以通过`@inline`来使用直接派发，但是同时使用`dynamic @inline`修饰时，会使用消息机制派发。
 
 **修饰符总结**
+
 | |
---|:--:
-final| Static
-dynamic| Message
-@objc | Modify Objective-C Visiblity
-@online | Code generation hint for direct dispatch
+| -- | :--: |
+|final| Static|
+|dynamic| Message
+|@objc | Modify Objective-C Visiblity|
+|@online | Code generation hint for direct dispatch|
+
 
 #### 显示优化
 Swift会尽可能优化函数派发方式，例如，一个函数从来没有继承或被继承过，Swift就会检测到并且在可能的情况下使用直接派发，在大多数情况下这样的优化效果非常好，但是对于CoCoa开发者就不太友好了。
