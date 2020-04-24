@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Swift的方法派发"
+title: "Swift的函数派发"
 subtitle: ""
 author: "Scp"
 header-style: text
